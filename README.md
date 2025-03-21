@@ -118,4 +118,4 @@ Coming soon...
 
 ## 💬 Support
 
-For support, email bizventory.support@gmail.com or join our Discord channel. 
+For support, email bizventory.support@gmail.com. 
