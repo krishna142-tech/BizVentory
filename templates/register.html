@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Business Registration - BizVentory{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+    }
+
+    .signin-container {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        padding-top: 60px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .signin-box {
+        max-width: 800px !important;
+        width: 100%;
+        padding: 3rem;
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        margin: 2rem auto;
+    }
+
+    h1 {
+        background: linear-gradient(45deg, #1442e9 0%, #4A90E2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 2rem;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid rgba(74, 144, 226, 0.1);
+    }
+
+    .form-section h3 {
+        color: #4A90E2;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #2C3E50;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(74, 144, 226, 0.2);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #4A90E2;
+        box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        outline: none;
+    }
+
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .required-field::after {
+        content: "*";
+        color: #E74C3C;
+        margin-left: 4px;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 1rem;
+        background: #1442e9;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background: #1139d4;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(20, 66, 233, 0.2);
+    }
+
+    .additional-links {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #2C3E50;
+    }
+
+    .additional-links a {
+        color: #1442e9;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .additional-links a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .signin-container {
+            padding: 1rem;
+            min-height: calc(100vh - 120px);
+        }
+
+        .signin-box {
+            padding: 2rem;
+            margin: 1rem;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        h1 {
+            font-size: 2rem;
+        }
+
+        .form-section h3 {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signin-container">
+    <div class="signin-box">
+        <h1>Business Registration</h1>
+        <form method="POST" action="{{ url_for('register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-section">
+                <h3>Business Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="business_name" class="required-field">Business Name</label>
+                        <input type="text" id="business_name" name="business_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="business_type" class="required-field">Business Type</label>
+                        <select id="business_type" name="business_type" required>
+                            <option value="">Select Business Type</option>
+                            <option value="retail">Retail</option>
+                            <option value="wholesale">Wholesale</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="service">Service</option>
+                            <option value="distribution">Distribution</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency" class="required-field">Default Currency</label>
+                        <select id="currency" name="currency" required>
+                            <option value="USD">US Dollar (USD)</option>
+                            <option value="EUR">Euro (EUR)</option>
+                            <option value="GBP">British Pound (GBP)</option>
+                            <option value="JPY">Japanese Yen (JPY)</option>
+                            <option value="AUD">Australian Dollar (AUD)</option>
+                            <option value="CAD">Canadian Dollar (CAD)</option>
+                            <option value="CHF">Swiss Franc (CHF)</option>
+                            <option value="CNY">Chinese Yuan (CNY)</option>
+                            <option value="INR">Indian Rupee (INR)</option>
+                            <option value="NZD">New Zealand Dollar (NZD)</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="business_description">Business Description</label>
+                        <textarea id="business_description" name="business_description"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Contact Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="owner_name" class="required-field">Owner Name</label>
+                        <input type="text" id="owner_name" name="owner_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone" class="required-field">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="required-field">Business Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="alternate_email">Alternate Email</label>
+                        <input type="email" id="alternate_email" name="alternate_email">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="address" class="required-field">Business Address</label>
+                        <textarea id="address" name="address" required></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Continue to Account Setup</button>
+        </form>
+        <div class="additional-links">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registrationForm');
+    
+    form.addEventListener('submit', function(e) {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        if (password.value !== confirmPassword.value) {
+            e.preventDefault();
+            alert('Passwords do not match');
+        }
+    });
+});
+</script>
+{% endblock %}

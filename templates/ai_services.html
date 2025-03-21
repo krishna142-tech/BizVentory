@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}AI Services - BizVentory{% endblock %}
+
+{% block content %}
+<div class="ai-services-container">
+    <div class="service-card">
+        <div class="service-header">
+            <h2>Inventory Prediction</h2>
+            <button onclick="window.location.href='{{ url_for('dashboard') }}'" class="close-button" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="service-content">
+            <form id="predictionForm" onsubmit="getPrediction(event)">
+                <div class="form-group">
+                    <label for="category">Category:</label>
+                    <select id="category" name="category" class="form-input" required>
+                        <option value="">Select a category</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prediction_period">Prediction Period (days):</label>
+                    <select id="prediction_period" name="prediction_period" class="form-input">
+                        <option value="7">7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="60">60 days</option>
+                        <option value="90">90 days</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Generate Prediction</button>
+            </form>
+
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Generating predictions...</p>
+            </div>
+
+            <div id="predictionResults" class="prediction-results">
+                <h3>Predicted Demand</h3>
+                <div id="predictionMessage" class="alert alert-info"></div>
+                <table class="prediction-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Predicted Demand</th>
+                            <th>Recommended Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predictionTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.ai-services-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.service-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.service-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.service-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.service-content {
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.prediction-results {
+    margin-top: 1.5rem;
+    display: none;
+}
+
+.prediction-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.prediction-table th,
+.prediction-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.prediction-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.close-button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-left: 1rem;
+}
+
+.close-button:hover {
+    opacity: 0.8;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 1rem;
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .ai-services-container {
+        padding: 0.5rem;
+    }
+
+    .service-content {
+        padding: 1rem;
+    }
+
+    .prediction-table th,
+    .prediction-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getPrediction(event) {
+    event.preventDefault();
+    
+    const category = document.getElementById('category').value;
+    const period = document.getElementById('prediction_period').value;
+    
+    // Show loading
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('predictionResults').style.display = 'none';
+    
+    fetch('{{ url_for("get_inventory_prediction") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            category: category,
+            prediction_period: parseInt(period)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide loading
+        document.getElementById('loading').style.display = 'none';
+        
+        if (data.success) {
+            const results = document.getElementById('predictionResults');
+            const message = document.getElementById('predictionMessage');
+            const tableBody = document.getElementById('predictionTableBody');
+            
+            message.textContent = data.message;
+            tableBody.innerHTML = '';
+            
+            if (data.predictions && data.predictions.length > 0) {
+                data.predictions.forEach(pred => {
+                    const row = document.createElement('tr');
+                    const recommendedAction = getRecommendedAction(pred.prediction);
+                    
+                    row.innerHTML = `
+                        <td>${pred.item}</td>
+                        <td>${pred.prediction} units</td>
+                        <td>${recommendedAction}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                results.style.display = 'block';
+            } else {
+                message.textContent = 'No predictions available for the selected category.';
+                results.style.display = 'block';
+            }
+        } else {
+            alert(data.error || 'Failed to generate predictions');
+        }
+    })
+    .catch(error => {
+        document.getElementById('loading').style.display = 'none';
+        console.error('Error:', error);
+        alert('An error occurred while generating predictions');
+    });
+}
+
+function getRecommendedAction(prediction) {
+    if (prediction <= 0) {
+        return 'No restocking needed';
+    } else if (prediction < 10) {
+        return 'Consider restocking soon';
+    } else if (prediction < 20) {
+        return 'Plan for restock';
+    } else {
+        return 'Immediate restock recommended';
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - BizVentory{% endblock %}
+
+{% block extra_css %}
+<style>
+.reports-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.report-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.report-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.report-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.report-filters {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.report-content {
+    padding: 1rem;
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.report-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.report-card h3 {
+    margin: 0 0 1rem;
+    color: var(--secondary-color);
+}
+
+.metric {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.trend {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.trend.positive {
+    color: #10B981;
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.trend.negative {
+    color: #EF4444;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.chart-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+@media (max-width: 1200px) {
+    .charts-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .reports-container {
+        padding: 0.5rem;
+    }
+
+    .report-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem;
+    }
+
+    .filter-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+
+    .report-card {
+        padding: 1rem;
+    }
+
+    .value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-container {
+        height: 200px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <div class="report-section">
+        <div class="report-header">
+            <h2>{{ period_text }}</h2>
+            <div class="filter-group">
+                <select id="reportPeriod" class="form-input" onchange="updateReport()">
+                    <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
+                    <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
+                </select>
+                <button class="btn btn-primary" onclick="downloadReport()">
+                    <i class="fas fa-download"></i> Download Report
+                </button>
+            </div>
+        </div>
+
+        <div class="report-content">
+            <div class="report-grid">
+                <div class="report-card">
+                    <h3>Total Sales</h3>
+                    <div class="metric">
+                        <span class="value">{{ currency }} {{ "%.2f"|format(total_sales) }}</span>
+                        <span class="trend {% if sales_trend > 0 %}positive{% elif sales_trend < 0 %}negative{% endif %}">
+                            {% if sales_trend > 0 %}↑{% elif sales_trend < 0 %}↓{% endif %}
+                            {{ "%.1f"|format(sales_trend|abs) }}%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3>Total Orders</h3>
+                    <div class="metric">
+                        <span class="value">{{ total_orders }}</span>
+                        <span class="trend {% if order_trend > 0 %}positive{% elif order_trend < 0 %}negative{% endif %}">
+                            {% if order_trend > 0 %}↑{% elif order_trend < 0 %}↓{% endif %}
+                            {{ "%.1f"|format(order_trend|abs) }}%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <h3>Average Order Value</h3>
+                    <div class="metric">
+                        <span class="value">{{ currency }} {{ "%.2f"|format(avg_order_value) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-section">
+                    <h3>Sales Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Category Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Brand Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="brandChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set selected period in dropdown
+    document.getElementById('reportPeriod').value = '{{ period }}';
+
+    // Sales Trend Chart
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: {{ dates|tojson }},
+            datasets: [{
+                label: 'Sales',
+                data: {{ sales_data|tojson }},
+                borderColor: '#4A90E2',
+                tension: 0.4,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '{{ currency }} ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_labels|tojson }},
+            datasets: [{
+                data: {{ category_data|tojson }},
+                backgroundColor: [
+                    '#4A90E2',
+                    '#2ECC71',
+                    '#F1C40F',
+                    '#E74C3C',
+                    '#9B59B6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            return data.labels.map((label, i) => ({
+                                text: `${label} (${((data.datasets[0].data[i] / total) * 100).toFixed(1)}%)`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                hidden: false,
+                                index: i
+                            }));
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: {{ currency }} ${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Brand Distribution Chart
+    const brandCtx = document.getElementById('brandChart').getContext('2d');
+    new Chart(brandCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ brand_labels|tojson }},
+            datasets: [{
+                data: {{ brand_data|tojson }},
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const brandCategories = {{ brand_categories|tojson }};
+                            return data.labels.map((label, i) => ({
+                                text: `${label} (${((data.datasets[0].data[i] / total) * 100).toFixed(1)}%)`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                hidden: false,
+                                index: i,
+                                // Add categories as a data attribute
+                                categories: brandCategories[label]
+                            }));
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            const brandCategories = {{ brand_categories|tojson }};
+                            const categories = brandCategories[context.label].join(', ');
+                            return [
+                                `${context.label}: {{ currency }} ${value.toLocaleString()} (${percentage}%)`,
+                                `Categories: ${categories}`
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+function updateReport() {
+    const period = document.getElementById('reportPeriod').value;
+    window.location.href = `{{ url_for('reports') }}?period=${period}`;
+}
+
+function downloadReport() {
+    const period = document.getElementById('reportPeriod').value;
+    window.location.href = `{{ url_for('download_report') }}?period=${period}`;
+}
+</script>
+{% endblock %} 

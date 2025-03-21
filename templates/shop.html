@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Shop - BizVentory{% endblock %}
+
+{% block content %}
+<div class="shop-container">
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form id="filterForm" method="GET" class="filter-row">
+            <!-- Category Filter -->
+            <div class="filter-group">
+                <select id="categoryFilter" multiple class="filter-select" name="categories">
+                    {% for category in categories %}
+                    <option value="{{ category }}" {% if category in selected_categories %}selected{% endif %}>{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Price Range -->
+            <div class="filter-group price-range">
+                <input type="number" id="minPrice" name="min_price" placeholder="Min Price" value="{{ min_price or '' }}" class="price-input">
+                <input type="number" id="maxPrice" name="max_price" placeholder="Max Price" value="{{ max_price or '' }}" class="price-input">
+            </div>
+
+            <!-- Stock Filter -->
+            <div class="filter-group stock-filter">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="inStockOnly" name="in_stock" {% if in_stock_only %}checked{% endif %}>
+                    <span>In Stock Only</span>
+                </label>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="filter-group">
+                <select id="sortBy" name="sort" class="sort-select">
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                    <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="product-grid">
+        {% for item in items %}
+        <div class="product-card">
+            <div class="product-header">
+                <h3 class="product-name">{{ item.name }}</h3>
+                <span class="stock-badge {% if item.quantity <= item.min_quantity %}low-stock{% else %}in-stock{% endif %}">
+                    {% if item.quantity <= 0 %}
+                    Out of Stock
+                    {% elif item.quantity <= item.min_quantity %}
+                    Low Stock ({{ item.quantity }} left)
+                    {% else %}
+                    In Stock
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="product-info">
+                <span class="product-brand">{{ item.brand }}</span>
+                <span class="product-category">{{ item.category }}</span>
+                <span class="product-price">{{ currency }} {{ "%.2f"|format(item.price) }}</span>
+                
+                <div class="quantity-controls">
+                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" onclick="decrementQuantity('{{ item._id }}')">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <input type="number" id="quantity-{{ item._id }}" class="quantity-input" value="1" min="1" max="{{ item.quantity }}" data-item-id="{{ item._id }}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" onclick="incrementQuantity('{{ item._id }}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <button class="btn btn-primary add-to-cart" onclick="addToCart('{{ item._id }}')" {% if item.quantity <= 0 %}disabled{% endif %}>
+                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Flash Messages Container -->
+<div id="flashMessages" class="flash-messages"></div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Container */
+.shop-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Filter Inputs */
+.filter-select,
+.sort-select,
+.price-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+}
+
+.price-range {
+    display: flex;
+    gap: 8px;
+}
+
+.price-input {
+    width: 50%;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #555;
+}
+
+/* Product Grid */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+/* Product Card */
+.product-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    padding: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+/* Product Header */
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.product-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+/* Stock Badge */
+.stock-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.stock-badge.in-stock {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.stock-badge.low-stock {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* Product Info */
+.product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.product-brand {
+    color: #555;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.product-category {
+    color: #666;
+    font-size: 14px;
+}
+
+.product-price {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2196f3;
+}
+
+/* Quantity Controls */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9fa;
+    padding: 4px;
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.quantity-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quantity-input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 14px;
+}
+
+/* Add to Cart Button */
+.add-to-cart {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: #2196f3;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.add-to-cart:hover {
+    background: #1976d2;
+}
+
+.add-to-cart:disabled {
+    background: #e0e0e0;
+    cursor: not-allowed;
+}
+
+/* Flash Messages */
+.flash-messages {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.alert {
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: white;
+    pointer-events: auto;
+    animation: slideIn 0.3s ease-out;
+}
+
+.alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.alert-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.btn-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .shop-container {
+        padding: 16px;
+    }
+
+    .product-card {
+        padding: 16px;
+    }
+
+    .flash-messages {
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .alert {
+        margin: 0 10px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function incrementQuantity(itemId) {
+    const input = document.getElementById(`quantity-${itemId}`);
+    const max = parseInt(input.getAttribute('max'));
+    const currentValue = parseInt(input.value) || 1;
+    if (currentValue < max) {
+        input.value = currentValue + 1;
+    }
+}
+
+function decrementQuantity(itemId) {
+    const input = document.getElementById(`quantity-${itemId}`);
+    const currentValue = parseInt(input.value) || 1;
+    if (currentValue > 1) {
+        input.value = currentValue - 1;
+    }
+}
+
+function addToCart(itemId) {
+    const quantityInput = document.getElementById(`quantity-${itemId}`);
+    const quantity = parseInt(quantityInput.value) || 1;
+    const max = parseInt(quantityInput.getAttribute('max'));
+    
+    if (quantity < 1 || quantity > max) {
+        showFlashMessage('Invalid quantity selected', 'error');
+        return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Disable the add to cart button while processing
+    const addToCartBtn = quantityInput.closest('.product-info').querySelector('.add-to-cart');
+    addToCartBtn.disabled = true;
+    addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            quantity: quantity
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => Promise.reject(data));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update cart count in navigation
+            const cartCountElement = document.getElementById('cartCount');
+            if (cartCountElement) {
+                cartCountElement.textContent = data.cart_count;
+                cartCountElement.style.display = data.cart_count > 0 ? 'inline' : 'none';
+            }
+            // Reset quantity to 1
+            quantityInput.value = 1;
+            // Show success message
+            showFlashMessage('Item added to cart successfully', 'success');
+        } else {
+            showFlashMessage(data.error || 'Failed to add item to cart', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage(error.error || 'An error occurred while adding item to cart', 'error');
+    })
+    .finally(() => {
+        // Re-enable the add to cart button
+        addToCartBtn.disabled = false;
+        addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to Cart';
+    });
+}
+
+function showFlashMessage(message, type) {
+    const flashContainer = document.getElementById('flashMessages');
+    const messageElement = document.createElement('div');
+    messageElement.className = `alert alert-${type}`;
+    messageElement.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close"></button>
+    `;
+    flashContainer.appendChild(messageElement);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        messageElement.remove();
+    }, 5000);
+}
+
+// Filter functionality
+document.getElementById('filterForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+});
+
+// Auto-submit on filter changes
+document.getElementById('categoryFilter').addEventListener('change', () => document.getElementById('filterForm').submit());
+document.getElementById('minPrice').addEventListener('change', () => document.getElementById('filterForm').submit());
+document.getElementById('maxPrice').addEventListener('change', () => document.getElementById('filterForm').submit());
+document.getElementById('inStockOnly').addEventListener('change', () => document.getElementById('filterForm').submit());
+document.getElementById('sortBy').addEventListener('change', () => document.getElementById('filterForm').submit());
+
+// Prevent invalid quantity input
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const min = parseInt(this.getAttribute('min'));
+            const max = parseInt(this.getAttribute('max'));
+            let value = parseInt(this.value) || min;
+            
+            if (value < min) value = min;
+            if (value > max) value = max;
+            
+            this.value = value;
+        });
+        
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

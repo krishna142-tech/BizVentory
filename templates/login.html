@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Login - BizVentory{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+    }
+
+    .auth-container {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        padding-top: 60px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .signin-box {
+        max-width: 450px;
+        width: 100%;
+        padding: 3rem;
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        margin: 2rem auto;
+    }
+
+    h1 {
+        background: linear-gradient(45deg, #1442e9 0%, #4A90E2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 2rem;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #2C3E50;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(74, 144, 226, 0.2);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-group input:focus {
+        border-color: #4A90E2;
+        box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        outline: none;
+    }
+
+    .invalid-feedback {
+        color: #E74C3C;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 1rem;
+        background: #1442e9;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background: #1139d4;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(20, 66, 233, 0.2);
+    }
+
+    .additional-links {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #2C3E50;
+    }
+
+    .additional-links a {
+        color: #1442e9;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .additional-links a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 1rem;
+            min-height: calc(100vh - 120px);
+        }
+
+        .signin-box {
+            padding: 2rem;
+            margin: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="signin-box">
+        <h1>Welcome Back</h1>
+        <form method="POST" action="{{ url_for('login') }}" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+                <div class="invalid-feedback">Please enter your password.</div>
+            </div>
+            <button type="submit" class="btn-primary">Login</button>
+        </form>
+        <div class="additional-links">
+            <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.needs-validation');
+    
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %} 

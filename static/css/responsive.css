@@ -1,0 +1,131 @@
+/* Mobile Devices (up to 768px) */
+@media screen and (max-width: 768px) {
+    .hero {
+        padding: 2rem 1rem;
+    }
+
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+
+    .features, .steps {
+        flex-direction: column;
+    }
+
+    .feature, .step {
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .nav-links {
+        margin-top: 1rem;
+    }
+
+    /* Dashboard Responsive Design */
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: static;
+    }
+
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .summary-cards {
+        flex-direction: column;
+    }
+
+    .card {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .product-table {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        min-width: 300px;
+    }
+
+    .add-product-form {
+        width: 100%;
+    }
+
+    .form-group {
+        width: 100%;
+    }
+}
+
+/* Tablet Devices (769px to 1024px) */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+
+    .features, .steps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .feature, .step {
+        width: 45%;
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .sidebar {
+        width: 250px;
+    }
+
+    .main-content {
+        flex-grow: 1;
+        width: calc(100% - 250px);
+    }
+}
+
+/* Desktop Adjustments */
+@media screen and (min-width: 1025px) {
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+
+    .features, .steps {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+
+/* General Responsive Utilities */
+.responsive-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Flexbox Responsive Helpers */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}

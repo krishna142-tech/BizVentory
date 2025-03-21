@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Account Setup - BizVentory{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+<style>
+    .password-requirements {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+    .form-group input.is-invalid + .invalid-feedback {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="signin-box">
+        <h1>Account Setup</h1>
+        <form method="POST" action="{{ url_for('create_account') }}" id="accountSetupForm" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required minlength="3" maxlength="30" pattern="^[a-zA-Z0-9_-]+$">
+                <div class="invalid-feedback">Username must be 3-30 characters long and can only contain letters, numbers, underscores, and hyphens.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="8">
+                <div class="password-requirements">
+                    Password must be at least 8 characters long
+                </div>
+                <div class="invalid-feedback">Password must be at least 8 characters long.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+                <div class="invalid-feedback">Passwords do not match.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="tax_id">Tax ID (Optional)</label>
+                <input type="text" id="tax_id" name="tax_id">
+            </div>
+
+            <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('accountSetupForm');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const username = document.getElementById('username');
+
+    form.addEventListener('submit', function(event) {
+        let isValid = true;
+
+        // Validate username
+        if (!username.value.match(/^[a-zA-Z0-9_-]{3,30}$/)) {
+            username.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            username.classList.remove('is-invalid');
+        }
+
+        // Validate password
+        if (password.value.length < 8) {
+            password.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            password.classList.remove('is-invalid');
+        }
+
+        // Validate password match
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            confirmPassword.classList.remove('is-invalid');
+        }
+
+        if (!isValid) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

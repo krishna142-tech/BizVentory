@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <!-- Large Angular V Background -->
+  <path d="M40,20 L80,90 L120,20" 
+        fill="red" 
+        stroke="none"/>
+  
+  <!-- Overlaying Lines - Inventory Levels -->
+  <g stroke="#FFF" stroke-width="2">
+    <line x1="55" y1="35" x2="105" y2="35"/>
+    <line x1="60" y1="45" x2="100" y2="45"/>
+    <line x1="65" y1="55" x2="95" y2="55"/>
+    <line x1="70" y1="65" x2="90" y2="65"/>
+  </g>
+  
+  <!-- Company Name -->
+  <g transform="translate(130, 0)">
+    <!-- Biz -->
+    <text x="0" y="65" 
+          font-family="Arial, sans-serif" 
+          font-size="45" 
+          font-weight="900" 
+          fill="#333333">
+      <tspan fill="red">Biz</tspan>
+    </text>
+    <!-- Ventory -->
+    <text x="70" y="65" 
+          font-family="Arial, sans-serif" 
+          font-size="45" 
+          font-weight="900" 
+          fill="offwhite">Ventory</text>
+  </g>
+  
+  <!-- Tagline -->
+  <text x="130" y="85" 
+        font-family="Arial, sans-serif" 
+        font-size="18" 
+        font-weight="bold" 
+        fill="offwhite">
+    MANAGE • TRACK • GROW
+  </text>
+</svg>

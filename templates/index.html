@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block title %}BizVentory - Smart Inventory Management{% endblock %}
+
+{% block content %}
+<div class="cursor"></div>
+<div class="cursor-follower"></div>
+
+<div class="hero">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="gradient-text animate-text">Welcome to BizVentory</h1>
+            <p class="hero-subtitle">Your intelligent inventory management solution</p>
+            <div class="hero-features">
+                <div class="feature">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Real-time Analytics</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Secure Platform</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-bolt"></i>
+                    <span>Fast & Efficient</span>
+                </div>
+            </div>
+        </div>
+        <div class="auth-section">
+            <div class="auth-box">
+                <div class="auth-form">
+                    <form action="{{ url_for('login') }}" method="POST" id="loginForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <input type="email" name="email" placeholder="Email" class="form-input" required>
+                        <input type="password" name="password" placeholder="Password" class="form-input" required>
+                        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                    </form>
+                </div>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <a href="{{ url_for('register') }}" class="btn btn-secondary btn-block">Create Account</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="features-section">
+    <div class="container">
+        <h2>Why Choose BizVentory?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-laptop-code"></i>
+                <h3>Smart Interface</h3>
+                <p>Intuitive design with powerful features at your fingertips</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-clock"></i>
+                <h3>Real-time Updates</h3>
+                <p>Track inventory changes instantly across your business</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Enterprise Security</h3>
+                <p>Bank-grade security protecting your business data</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-chart-bar"></i>
+                <h3>Advanced Analytics</h3>
+                <p>Data-driven insights to optimize your inventory</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        cursor: none !important;
+        overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+    }
+
+    .cursor {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        mix-blend-mode: difference;
+        transition: transform 0.2s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .cursor-follower {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 9998;
+        transition: transform 0.3s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .cursor.active {
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+
+    .cursor-follower.active {
+        transform: translate(-50%, -50%) scale(0.5);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .hero {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        color: white;
+        min-height: 100vh;
+        width: 100%;
+        position: relative;
+        margin-top: -60px;
+        padding-top: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-content {
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4rem;
+        padding: 4rem 2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-text {
+        flex: 1;
+        max-width: 600px;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 3rem;
+        opacity: 0.9;
+    }
+
+    .hero-features {
+        display: flex;
+        gap: 3rem;
+        margin-bottom: 2rem;
+    }
+
+    .feature {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .feature i {
+        font-size: 2.5rem;
+        opacity: 0.9;
+    }
+
+    .feature span {
+        font-size: 1.1rem;
+    }
+
+    .auth-section {
+        flex: 0 0 400px;
+    }
+
+    .auth-box {
+        background: rgba(74, 144, 226, 0.2);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(74, 144, 226, 0.3);
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-input {
+        padding: 1rem;
+        border: 1px solid rgba(74, 144, 226, 0.3);
+        border-radius: 8px;
+        background: rgba(74, 144, 226, 0.1);
+        color: white;
+        font-size: 1rem;
+    }
+
+    .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #4A90E2;
+        background: rgba(74, 144, 226, 0.2);
+    }
+
+    .btn-block {
+        width: 100%;
+        padding: 1rem;
+        text-align: center;
+        font-size: 1.1rem;
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+    }
+
+    .auth-divider span {
+        padding: 0 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+
+    .features-section {
+        background: white;
+        padding: 6rem 2rem;
+        position: relative;
+        width: 100vw;
+        margin-left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 0;
+    }
+
+    .features-section .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        padding: 0 2rem;
+    }
+
+    .features-section h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 4rem;
+        color: #2c3e50;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin: 0 auto;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-card i {
+        font-size: 2.5rem;
+        color: #4A90E2;
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+
+    .feature-card p {
+        color: #666;
+        line-height: 1.6;
+    }
+
+    .gradient-text {
+        background: linear-gradient(45deg, #1442e9 0%, #d30808 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+        font-weight: bold;
+        text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    @media (max-width: 1024px) {
+        .hero-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 3rem;
+        }
+
+        .hero-features {
+            justify-content: center;
+        }
+
+        .auth-section {
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 400px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        body, * {
+            cursor: auto !important;
+        }
+        
+        .cursor, .cursor-follower {
+            display: none !important;
+        }
+        
+        .hero, .features-section {
+            width: 100%;
+        }
+
+        .hero {
+            margin-top: 0;
+        }
+
+        .hero-content {
+            padding: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+        }
+
+        .hero-features {
+            gap: 2rem;
+        }
+
+        .feature i {
+            font-size: 2rem;
+        }
+
+        .features-section {
+            padding: 4rem 1.5rem;
+        }
+
+        .features-section h2 {
+            font-size: 2rem;
+            margin-bottom: 3rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hero-content {
+            padding: 1.5rem;
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero-features {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .auth-box {
+            padding: 1.5rem;
+        }
+
+        .features-section {
+            padding: 3rem 1rem;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    * {
+        cursor: none !important;
+    }
+
+    a, button, input, .feature, .auth-box {
+        cursor: none !important;
+    }
+
+    .btn-primary {
+        background: #4A90E2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: #357ABD;
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: white;
+        border: 1px solid #4A90E2;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(74, 144, 226, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cursor = document.querySelector('.cursor');
+    const cursorFollower = document.querySelector('.cursor-follower');
+    
+    document.addEventListener('mousemove', function(e) {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+        
+        cursorFollower.style.left = e.clientX + 'px';
+        cursorFollower.style.top = e.clientY + 'px';
+    });
+    
+    document.addEventListener('mousedown', function() {
+        cursor.classList.add('active');
+        cursorFollower.classList.add('active');
+    });
+    
+    document.addEventListener('mouseup', function() {
+        cursor.classList.remove('active');
+        cursorFollower.classList.remove('active');
+    });
+    
+    const links = document.querySelectorAll('a, button, input, .feature, .auth-box');
+    links.forEach(link => {
+        link.addEventListener('mouseenter', () => {
+            cursor.classList.add('active');
+            cursorFollower.classList.add('active');
+        });
+        
+        link.addEventListener('mouseleave', () => {
+            cursor.classList.remove('active');
+            cursorFollower.classList.remove('active');
+        });
+    });
+
+    // Form submission handling
+    const loginForm = document.getElementById('loginForm');
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(loginForm);
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        try {
+            const response = await fetch('{{ url_for("login") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = data.message || 'Invalid credentials. Please try again.';
+                errorMessage.style.color = 'red';
+                errorMessage.style.marginTop = '10px';
+                errorMessage.style.textAlign = 'center';
+                
+                // Remove any existing error messages
+                const existingError = loginForm.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                loginForm.appendChild(errorMessage);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = 'An error occurred. Please try again.';
+            errorMessage.style.color = 'red';
+            errorMessage.style.marginTop = '10px';
+            errorMessage.style.textAlign = 'center';
+            
+            // Remove any existing error messages
+            const existingError = loginForm.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            loginForm.appendChild(errorMessage);
+        }
+    });
+});
+</script>
+{% endblock %} 

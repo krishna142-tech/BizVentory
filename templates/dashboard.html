@@ -1,0 +1,1180 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BizVentory{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Financial Overview Section -->
+    <div class="financial-overview">
+        <div class="section-header">
+            <h2>Financial Overview</h2>
+            <div class="actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportFinancialData()">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+                <select id="timeRange" class="form-select form-select-sm" onchange="updateTimeRange()">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30" selected>Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="365">Last Year</option>
+                </select>
+            </div>
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Gross Profit Margin</h3>
+                <div class="kpi-value">{{ "%.1f"|format(visualization_data.kpis.gross_profit_margin) }}%</div>
+                <div class="kpi-trend positive">↑ 2.5% from last month</div>
+                <div class="kpi-chart">
+                    <canvas id="profitMarginTrendChart" height="50"></canvas>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <h3>Inventory Turnover</h3>
+                <div class="kpi-value">{{ "%.1f"|format(visualization_data.kpis.inventory_turnover) }}x</div>
+                <div class="kpi-trend positive">↑ 0.3x from last month</div>
+                <div class="kpi-chart">
+                    <canvas id="turnoverTrendChart" height="50"></canvas>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <h3>ROI</h3>
+                <div class="kpi-value">{{ "%.1f"|format(visualization_data.kpis.return_on_investment) }}%</div>
+                <div class="kpi-trend positive">↑ 5.2% from last month</div>
+                <div class="kpi-chart">
+                    <canvas id="roiTrendChart" height="50"></canvas>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <h3>Avg Transaction</h3>
+                <div class="kpi-value">{{ currency }} {{ "%.2f"|format(visualization_data.kpis.average_transaction_value) }}</div>
+                <div class="kpi-trend negative">↓ 1.2% from last month</div>
+                <div class="kpi-chart">
+                    <canvas id="avgTransactionTrendChart" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Financial Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h4>Cash Flow</h4>
+                <div class="metric-value">{{ currency }} {{ "%.2f"|format(visualization_data.additional_metrics.cash_flow) }}</div>
+                <div class="metric-label">Net 30-day cash flow</div>
+            </div>
+            <div class="metric-card">
+                <h4>Operating Margin</h4>
+                <div class="metric-value">{{ "%.1f"|format(visualization_data.additional_metrics.operating_margin) }}%</div>
+                <div class="metric-label">Current operating margin</div>
+            </div>
+            <div class="metric-card">
+                <h4>Stock Efficiency</h4>
+                <div class="metric-value">{{ "%.1f"|format(visualization_data.additional_metrics.stock_efficiency) }}%</div>
+                <div class="metric-label">Inventory utilization rate</div>
+            </div>
+            <div class="metric-card">
+                <h4>Revenue Growth</h4>
+                <div class="metric-value">{{ "%.1f"|format(visualization_data.additional_metrics.revenue_growth) }}%</div>
+                <div class="metric-label">Month-over-month growth</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Charts Section -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Sales & Profit Trends</h3>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleChartType('salesTrendChart')">
+                        <i class="fas fa-chart-line"></i> Toggle Chart
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetZoom('salesTrendChart')">
+                        <i class="fas fa-search-minus"></i> Reset Zoom
+                    </button>
+                </div>
+                    </div>
+            <canvas id="salesTrendChart"></canvas>
+                    </div>
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Category Performance</h3>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleChartType('categoryChart')">
+                        <i class="fas fa-chart-bar"></i> Toggle Chart
+                    </button>
+                    <select class="form-select form-select-sm" onchange="updateCategoryMetric(this.value)">
+                        <option value="profit_margin">Profit Margin</option>
+                        <option value="revenue">Revenue</option>
+                        <option value="units">Units Sold</option>
+                    </select>
+                </div>
+            </div>
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+    
+                <div class="stats-grid">
+                    <div class="stat-card">
+            <h3>Total Items</h3>
+            <div class="stat-value">{{ total_items }}</div>
+            <div class="stat-label">Items in inventory</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Low Stock Items</h3>
+            <div class="stat-value {% if low_stock_items > 0 %}low-stock{% endif %}">{{ low_stock_items }}</div>
+            <div class="stat-label">Items need restocking</div>
+                    </div>
+                    <div class="stat-card">
+            <h3>Total Value</h3>
+            <div class="stat-value">{{ currency }} {{ "%.2f"|format(total_value) }}</div>
+            <div class="stat-label">Inventory worth</div>
+                    </div>
+                    <div class="stat-card">
+            <h3>Categories</h3>
+            <div class="stat-value">{{ total_categories }}</div>
+            <div class="stat-label">Product categories</div>
+                    </div>
+                </div>
+
+    <!-- Predictions Section -->
+    <div class="predictions-section">
+        <h2>30-Day Predictions</h2>
+        <div class="prediction-cards">
+            <div class="prediction-card">
+                <h3>Predicted Revenue</h3>
+                <div class="prediction-value">{{ currency }} {{ "%.2f"|format(visualization_data.predictions[-1].predicted_revenue) }}</div>
+                <div class="prediction-trend positive">↑ 8.3% expected growth</div>
+                    </div>
+            <div class="prediction-card">
+                <h3>Predicted Profit</h3>
+                <div class="prediction-value">{{ currency }} {{ "%.2f"|format(visualization_data.predictions[-1].predicted_profit) }}</div>
+                <div class="prediction-trend positive">↑ 7.1% expected growth</div>
+                    </div>
+                </div>
+        <canvas id="predictionChart"></canvas>
+    </div>
+
+    <div class="brand-overview">
+        <div class="brand-header">
+            <h2>Brand Overview</h2>
+                    </div>
+        <div class="brand-grid">
+            {% set grouped_items = {} %}
+            {% for item in inventory_items %}
+                {% if item.brand not in grouped_items %}
+                    {% set _ = grouped_items.update({item.brand: {'items': [], 'total_value': 0, 'total_quantity': 0, 'low_stock': 0}}) %}
+                {% endif %}
+                {% set brand_data = grouped_items[item.brand] %}
+                {% set _ = brand_data['items'].append(item) %}
+                {% set _ = brand_data.update({'total_value': brand_data['total_value'] + (item.quantity * item.price)}) %}
+                {% set _ = brand_data.update({'total_quantity': brand_data['total_quantity'] + item.quantity}) %}
+                {% if item.is_low_stock %}
+                    {% set _ = brand_data.update({'low_stock': brand_data['low_stock'] + 1}) %}
+                {% endif %}
+            {% endfor %}
+
+            {% for brand, data in grouped_items.items() %}
+            <div class="brand-card">
+                <h3>
+                    {{ brand }}
+                    <span class="brand-item-count">{{ data['items']|length }} items</span>
+                </h3>
+                <div class="brand-stats">
+                    <div class="brand-stat">
+                        <div class="brand-stat-value">{{ data['total_quantity'] }}</div>
+                        <div class="brand-stat-label">Total Units</div>
+                    </div>
+                    <div class="brand-stat">
+                        <div class="brand-stat-value">{{ currency }} {{ "%.2f"|format(data['total_value']) }}</div>
+                        <div class="brand-stat-label">Total Value</div>
+                    </div>
+                </div>
+                {% if data['low_stock'] > 0 %}
+                <div class="brand-stat low-stock">
+                    {{ data['low_stock'] }} items need restocking
+                </div>
+                {% endif %}
+                <div class="brand-items">
+                    <h4>Items</h4>
+                    <ul class="item-list">
+                        {% for item in data['items']|sort(attribute='quantity') %}
+                        <li {% if item.is_low_stock %}class="low-stock"{% endif %}>
+                            <span class="item-name">{{ item.name }}</span>
+                            <span class="item-quantity">{{ item.quantity }} in stock</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                        </div>
+                    </div>
+            {% endfor %}
+                        </div>
+                    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div id="addItemModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddItemModal()">&times;</span>
+        <h2>Add New Item</h2>
+        <form id="addItemForm" method="POST" action="{{ url_for('add_item') }}" class="needs-validation" novalidate>
+            {{ csrf_token() }}
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Item Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                    <div class="invalid-feedback">Please provide an item name.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="brand" class="form-label">Brand</label>
+                    <select class="form-select" id="brand" name="brand">
+                        <option value="">Select Brand</option>
+                        {% for brand in all_brands %}
+                        <option value="{{ brand }}">{{ brand }}</option>
+                        {% endfor %}
+                        <option value="new">Add New Brand</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-none" id="newBrandDiv">
+                    <label for="newBrand" class="form-label">New Brand Name</label>
+                    <input type="text" class="form-control" id="newBrand" name="newBrand">
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">Select Category</option>
+                        {% for category in all_categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                        <option value="new">Add New Category</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-none" id="newCategoryDiv">
+                    <label for="newCategory" class="form-label">New Category Name</label>
+                    <input type="text" class="form-control" id="newCategory" name="newCategory">
+                </div>
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="0" required>
+                    <div class="invalid-feedback">Please provide a valid quantity.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="price" class="form-label">Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currency }}</span>
+                        <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" required>
+                        <div class="invalid-feedback">Please provide a valid price.</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="min_quantity" class="form-label">Low Stock Alert Threshold</label>
+                    <input type="number" class="form-control" id="min_quantity" name="min_quantity" min="0" required>
+                    <div class="invalid-feedback">Please provide a valid minimum quantity.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Item</button>
+            </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 1rem;
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.brand-overview {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.brand-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.brand-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.brand-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.brand-card h3 {
+    margin: 0 0 1rem;
+    color: var(--secondary-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.brand-stat {
+    text-align: center;
+}
+
+.brand-stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.brand-stat-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.brand-items {
+    margin-top: 1rem;
+}
+
+.brand-items h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    color: var(--secondary-color);
+}
+
+.item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.item-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.item-list li:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    color: #333;
+}
+
+.item-quantity {
+    color: #666;
+}
+
+.low-stock {
+    color: #EF4444;
+}
+
+.financial-overview {
+    margin-bottom: 2rem;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.kpi-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0.5rem 0;
+}
+
+.kpi-trend {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.kpi-trend.positive {
+    color: #28a745;
+}
+
+.kpi-trend.negative {
+    color: #dc3545;
+}
+
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 400px;
+    position: relative;
+}
+
+.chart-container canvas {
+    max-height: 350px !important;
+}
+
+.chart-container h3 {
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+}
+
+.predictions-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.predictions-section canvas {
+    max-height: 300px !important;
+}
+
+.prediction-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 1rem 0 2rem;
+}
+
+.prediction-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.prediction-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0.5rem 0;
+}
+
+.prediction-trend {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.metric-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0.5rem 0;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.kpi-chart {
+    margin-top: 1rem;
+    height: 50px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.tooltip-custom {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 0.5rem;
+    }
+
+    .stats-grid {
+        gap: 1rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .brand-grid {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .brand-card {
+        padding: 1rem;
+    }
+
+    .brand-stat-value {
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Modal functionality
+    function showAddItemModal() {
+        document.getElementById('addItemModal').style.display = 'block';
+    }
+
+    function closeAddItemModal() {
+        document.getElementById('addItemModal').style.display = 'none';
+    }
+
+    // Edit item functionality
+    function editItem(itemId) {
+        fetch(`/get_item/${itemId}`)
+        .then(response => response.json())
+        .then(item => {
+            // Populate form with item details
+            document.getElementById('name').value = item.name;
+            document.getElementById('brand').value = item.brand;
+            document.getElementById('category').value = item.category;
+            document.getElementById('quantity').value = item.quantity;
+            document.getElementById('price').value = item.price;
+            document.getElementById('min_quantity').value = item.min_quantity;
+            
+            // Update form action
+            document.getElementById('addItemForm').action = `/edit_item/${itemId}`;
+            
+            // Show modal
+            showAddItemModal();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading item details. Please try again.');
+        });
+    }
+
+    // Delete item functionality
+    function deleteItem(itemId) {
+        if (confirm('Are you sure you want to delete this item?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/delete_item/${itemId}`;
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrf_token';
+            csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            form.appendChild(csrfToken);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('addItemModal')) {
+            closeAddItemModal();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show/hide new brand input
+        document.getElementById('brand').addEventListener('change', function() {
+            const newBrandDiv = document.getElementById('newBrandDiv');
+            if (this.value === 'new') {
+                newBrandDiv.classList.remove('d-none');
+                document.getElementById('newBrand').setAttribute('required', '');
+            } else {
+                newBrandDiv.classList.add('d-none');
+                document.getElementById('newBrand').removeAttribute('required');
+            }
+        });
+
+        // Show/hide new category input
+        document.getElementById('category').addEventListener('change', function() {
+            const newCategoryDiv = document.getElementById('newCategoryDiv');
+            if (this.value === 'new') {
+                newCategoryDiv.classList.remove('d-none');
+                document.getElementById('newCategory').setAttribute('required', '');
+            } else {
+                newCategoryDiv.classList.add('d-none');
+                document.getElementById('newCategory').removeAttribute('required');
+            }
+        });
+
+        // Form validation
+        const form = document.getElementById('addItemForm');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+
+        // Chart Colors and Configuration
+        const chartColors = {
+            blue: '#2196F3',
+            blueAlpha: 'rgba(33, 150, 243, 0.2)',
+            green: '#4CAF50',
+            greenAlpha: 'rgba(76, 175, 80, 0.2)',
+            primary: '#4CAF50',
+            primaryLight: 'rgba(76, 175, 80, 0.2)',
+            secondary: '#2196F3',
+            secondaryLight: 'rgba(33, 150, 243, 0.2)',
+            tertiary: '#FFC107',
+            quaternary: '#9C27B0'
+        };
+
+        // Sales Trend Chart
+        const salesTrendCtx = document.getElementById('salesTrendChart').getContext('2d');
+        const salesTrendChart = new Chart(salesTrendCtx, {
+            type: 'line',
+            data: {
+                labels: {{ visualization_data.daily_sales|map(attribute='date')|list|tojson|safe }},
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: {{ visualization_data.daily_sales|map(attribute='revenue')|list|tojson|safe }},
+                        borderColor: chartColors.primary,
+                        backgroundColor: chartColors.primaryLight,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        label: 'Profit',
+                        data: {{ visualization_data.daily_sales|map(attribute='profit')|list|tojson|safe }},
+                        borderColor: chartColors.secondary,
+                        backgroundColor: chartColors.secondaryLight,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                return label + '{{ currency }}' + context.parsed.y.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '{{ currency }}' + value.toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Category Performance Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ visualization_data.category_performance|map(attribute='category')|list|tojson }},
+                datasets: [{
+                    label: 'Profit Margin (%)',
+                    data: {{ visualization_data.category_performance|map(attribute='profit_margin')|list|tojson }},
+                    backgroundColor: chartColors.primary,
+                    borderRadius: 4,
+                    barThickness: 'flex',
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Prediction Chart
+        const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+        const predictionChart = new Chart(predictionCtx, {
+            type: 'line',
+            data: {
+                labels: {{ visualization_data.predictions|map(attribute='date')|list|tojson }},
+                datasets: [{
+                    label: 'Predicted Revenue',
+                    data: {{ visualization_data.predictions|map(attribute='predicted_revenue')|list|tojson }},
+                    borderColor: chartColors.primary,
+                    backgroundColor: chartColors.primaryLight,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }, {
+                    label: 'Predicted Profit',
+                    data: {{ visualization_data.predictions|map(attribute='predicted_profit')|list|tojson }},
+                    borderColor: chartColors.secondary,
+                    backgroundColor: chartColors.secondaryLight,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '{{ currency }}' + context.parsed.y.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '{{ currency }}' + value.toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Mini Trend Charts
+        function createMiniTrendChart(elementId, data, color) {
+            const ctx = document.getElementById(elementId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ visualization_data.trends.dates|tojson }},
+                    datasets: [{
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 1.5,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create mini trend charts
+        createMiniTrendChart('profitMarginTrendChart', {{ visualization_data.trends.profit_margin|tojson }}, chartColors.primary);
+        createMiniTrendChart('turnoverTrendChart', {{ visualization_data.trends.inventory_turnover|tojson }}, chartColors.secondary);
+        createMiniTrendChart('roiTrendChart', {{ visualization_data.trends.roi|tojson }}, chartColors.tertiary);
+        createMiniTrendChart('avgTransactionTrendChart', {{ visualization_data.trends.avg_transaction|tojson }}, chartColors.quaternary);
+    });
+
+    // Chart Interaction Functions
+    function toggleChartType(chartId) {
+        const chart = Chart.getChart(chartId);
+        const newType = chart.config.type === 'line' ? 'bar' : 'line';
+        chart.config.type = newType;
+        chart.update();
+    }
+
+    function resetZoom(chartId) {
+        const chart = Chart.getChart(chartId);
+        chart.resetZoom();
+    }
+
+    function updateTimeRange() {
+        const days = document.getElementById('timeRange').value;
+        fetch(`/api/dashboard/data?days=${days}`)
+            .then(response => response.json())
+            .then(data => {
+                updateCharts(data);
+                updateMetrics(data);
+            })
+            .catch(error => {
+                console.error('Error updating dashboard:', error);
+            });
+    }
+
+    function updateCategoryMetric(metric) {
+        const chart = Chart.getChart('categoryChart');
+        const data = {{ visualization_data.category_performance|tojson }};
+        
+        let label, suffix;
+        switch(metric) {
+            case 'profit_margin':
+                label = 'Profit Margin';
+                suffix = '%';
+                break;
+            case 'revenue':
+                label = 'Revenue';
+                suffix = '{{ currency }}';
+                break;
+            case 'units':
+                label = 'Units Sold';
+                suffix = '';
+                break;
+        }
+
+        chart.data.datasets[0].label = label;
+        chart.data.datasets[0].data = data.map(item => item[metric]);
+        chart.options.scales.y.ticks.callback = function(value) {
+            return suffix + value.toLocaleString();
+        };
+        chart.options.plugins.tooltip.callbacks.label = function(context) {
+            return `${label}: ${suffix}${context.parsed.y.toLocaleString()}`;
+        };
+        chart.update();
+    }
+
+    // Export Functionality
+    function exportFinancialData() {
+        const data = {
+            kpis: {{ visualization_data.kpis|tojson }},
+            additional_metrics: {{ visualization_data.additional_metrics|tojson }},
+            daily_sales: {{ visualization_data.daily_sales|tojson }},
+            category_performance: {{ visualization_data.category_performance|tojson }}
+        };
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Add KPIs worksheet
+        const kpisWS = XLSX.utils.json_to_sheet([{
+            'Gross Profit Margin': `${data.kpis.gross_profit_margin}%`,
+            'Inventory Turnover': `${data.kpis.inventory_turnover}x`,
+            'ROI': `${data.kpis.return_on_investment}%`,
+            'Average Transaction': `${data.kpis.average_transaction_value}`
+        }]);
+        XLSX.utils.book_append_sheet(wb, kpisWS, 'KPIs');
+
+        // Add Daily Sales worksheet
+        const salesWS = XLSX.utils.json_to_sheet(data.daily_sales);
+        XLSX.utils.book_append_sheet(wb, salesWS, 'Daily Sales');
+
+        // Add Category Performance worksheet
+        const categoryWS = XLSX.utils.json_to_sheet(data.category_performance);
+        XLSX.utils.book_append_sheet(wb, categoryWS, 'Category Performance');
+
+        // Save the file
+        XLSX.writeFile(wb, `financial_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    // Update charts with new data
+    function updateCharts(data) {
+        // Update Sales Trend Chart
+        const salesChart = Chart.getChart('salesTrendChart');
+        if (salesChart) {
+            salesChart.data.labels = data.chart_data.dates;
+            salesChart.data.datasets[0].data = data.chart_data.revenue;
+            salesChart.data.datasets[1].data = calculateMovingAverage(data.chart_data.revenue, 7);
+            salesChart.data.datasets[2].data = data.chart_data.profit;
+            salesChart.data.datasets[3].data = calculateMovingAverage(data.chart_data.profit, 7);
+            salesChart.update();
+        }
+
+        // Update Category Chart
+        const categoryChart = Chart.getChart('categoryChart');
+        if (categoryChart) {
+            categoryChart.data.labels = data.category_performance.map(cat => cat.category);
+            categoryChart.data.datasets[0].data = data.category_performance.map(cat => cat.profit_margin);
+            categoryChart.update();
+        }
+    }
+
+    // Helper function to calculate moving average
+    function calculateMovingAverage(data, window) {
+        return data.map((val, idx, arr) => {
+            const start = Math.max(0, idx - window + 1);
+            const values = arr.slice(start, idx + 1);
+            return values.reduce((sum, val) => sum + val, 0) / values.length;
+        });
+    }
+
+    // Update metrics display
+    function updateMetrics(data) {
+        // Update KPIs
+        document.querySelector('.kpi-card:nth-child(1) .kpi-value').textContent = 
+            data.metrics.operating_margin.toFixed(1) + '%';
+        document.querySelector('.kpi-card:nth-child(2) .kpi-value').textContent = 
+            data.metrics.stock_efficiency.toFixed(1) + '%';
+        document.querySelector('.kpi-card:nth-child(3) .kpi-value').textContent = 
+            '{{ currency }}' + data.metrics.cash_flow.toLocaleString();
+        document.querySelector('.kpi-card:nth-child(4) .kpi-value').textContent = 
+            data.metrics.revenue_growth.toFixed(1) + '%';
+    }
+</script>
+{% endblock %}

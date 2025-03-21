@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History - BizVentory{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Transaction History</h1>
+        <a href="{{ url_for('inventory') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Back to Inventory
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if transactions %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total Amount</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ transaction.items|length }} items</td>
+                            <td>{{ currency }} {{ "%.2f"|format(transaction.total_amount) }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline" onclick="toggleTransactionDetails('{{ loop.index }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="details-{{ loop.index }}" class="transaction-details" style="display: none;">
+                            <td colspan="4">
+                                <div class="transaction-items">
+                                    <table class="inner-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in transaction.items %}
+                                            <tr>
+                                                <td>{{ item.name }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ currency }} {{ "%.2f"|format(item.price) }}</td>
+                                                <td>{{ currency }} {{ "%.2f"|format(item.total) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No transactions found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-top: 2rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table th {
+    font-weight: 600;
+    background-color: var(--background-color);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.transaction-details {
+    background-color: var(--background-color);
+}
+
+.transaction-items {
+    padding: 1rem;
+}
+
+.inner-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.inner-table th,
+.inner-table td {
+    padding: 0.5rem;
+    border: none;
+    background: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleTransactionDetails(index) {
+    const detailsRow = document.getElementById(`details-${index}`);
+    if (detailsRow.style.display === 'none') {
+        detailsRow.style.display = 'table-row';
+    } else {
+        detailsRow.style.display = 'none';
+    }
+}
+</script>
+{% endblock %} 
