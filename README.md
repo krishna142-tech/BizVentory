@@ -118,4 +118,4 @@ Coming soon...
 
 ## 💬 Support
 
-For support, email bizventory.support@gmail.com. 
+For support, email krishna.8.git@gmail.com . 
