@@ -11,6 +11,10 @@ BizVentory is a modern, web-based inventory management system designed to help s
 - **Transaction Management**: Detailed history and automated record-keeping
 - **Security**: Secure user authentication and data protection
 
+## Known Issues
+
+⚠️ **Report Downloads**: There are currently issues with downloading reports. This is a known issue that will be fixed as soon as possible. We apologize for any inconvenience this may cause.
+
 ## Tech Stack
 
 - **Backend**: Python Flask

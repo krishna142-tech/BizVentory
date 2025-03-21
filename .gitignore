@@ -22,13 +22,11 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
-
-# Environment Variables
+env/
 .env
 
-# IDE specific files
+# IDE
 .idea/
 .vscode/
 *.swp
@@ -40,6 +38,27 @@ ENV/
 
 # Logs
 *.log
+
+# Local development settings
+instance/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # OS specific
 .DS_Store
