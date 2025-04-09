@@ -258,6 +258,39 @@ def get_currency_symbol():
     }
     return currency_symbols.get(currency_code, '$')
 
+def get_exchange_rates():
+    """Get current exchange rates"""
+    exchange_rates = {
+        'USD': 1.0,  # Base currency
+        'EUR': 0.85,
+        'GBP': 0.73,
+        'JPY': 110.0,
+        'INR': 75.0,
+        'CNY': 6.45,
+        'AUD': 1.35,
+        'CAD': 1.25,
+        'CHF': 0.92,
+        'NZD': 1.45
+    }
+    return exchange_rates
+
+def convert_currency(amount, from_currency='USD', to_currency='USD'):
+    """Convert amount from one currency to another"""
+    if from_currency == to_currency:
+        return amount
+        
+    rates = get_exchange_rates()
+    if from_currency not in rates or to_currency not in rates:
+        return amount
+        
+    # Convert to USD first (if not already in USD)
+    usd_amount = amount / rates[from_currency] if from_currency != 'USD' else amount
+    
+    # Convert from USD to target currency
+    converted_amount = usd_amount * rates[to_currency]
+    
+    return round(converted_amount, 2)
+
 @app.route('/dashboard')
 def dashboard():
     if not session.get('user_id'):
@@ -673,6 +706,11 @@ def update_profile():
 @login_required
 def update_settings():
     data = request.form
+    old_settings = mongo.db.business_settings.find_one({'user_id': ObjectId(session['user_id'])})
+    old_currency = old_settings.get('inventory_settings', {}).get('currency', 'USD') if old_settings else 'USD'
+    new_currency = data.get('currency', 'USD')
+
+    # Update notification preferences
     notification_updates = {
         'notification_preferences.low_stock_alerts': 'low_stock_alerts' in data,
         'notification_preferences.daily_reports': 'daily_reports' in data,
@@ -683,16 +721,45 @@ def update_settings():
     if 'low_stock_threshold' in data:
         inventory_updates['inventory_settings.default_low_stock_threshold'] = int(data.get('low_stock_threshold'))
     if 'currency' in data:
-        inventory_updates['inventory_settings.currency'] = data.get('currency')
+        inventory_updates['inventory_settings.currency'] = new_currency
     if 'date_format' in data:
         inventory_updates['inventory_settings.date_format'] = data.get('date_format')
     
     updates = {**notification_updates, **inventory_updates}
     
+    # Update settings
     mongo.db.business_settings.update_one(
         {'user_id': ObjectId(session['user_id'])},
         {'$set': updates}
     )
+
+    # If currency changed, update all monetary values in the database
+    if new_currency != old_currency:
+        # Update inventory prices
+        inventory_items = mongo.db.inventory.find({'user_id': ObjectId(session['user_id'])})
+        for item in inventory_items:
+            new_price = convert_currency(item['price'], old_currency, new_currency)
+            mongo.db.inventory.update_one(
+                {'_id': item['_id']},
+                {'$set': {'price': new_price}}
+            )
+
+        # Update transaction amounts
+        transactions = mongo.db.transactions.find({'user_id': ObjectId(session['user_id'])})
+        for transaction in transactions:
+            new_total = convert_currency(transaction['total_amount'], old_currency, new_currency)
+            # Update items in the transaction
+            for item in transaction['items']:
+                item['price'] = convert_currency(item['price'], old_currency, new_currency)
+                item['total'] = convert_currency(item['total'], old_currency, new_currency)
+            
+            mongo.db.transactions.update_one(
+                {'_id': transaction['_id']},
+                {'$set': {
+                    'total_amount': new_total,
+                    'items': transaction['items']
+                }}
+            )
     
     flash('Settings updated successfully!', 'success')
     return redirect(url_for('settings'))
