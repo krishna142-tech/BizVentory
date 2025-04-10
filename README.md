@@ -105,8 +105,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Font Awesome icons
 
 ## 📸 Screenshots
+![BizVentoryIndex](https://github.com/user-attachments/assets/6fe917d2-ebe7-4e4a-b703-10d014e61206)
 
-Coming soon...
+![BizVentoryDashboard](https://github.com/user-attachments/assets/63ba05e2-754d-4229-a956-77ef972255c9)
 
 ## 🛣️ Roadmap
 
@@ -118,4 +119,4 @@ Coming soon...
 
 ## 💬 Support
 
-For support, email bizventory.support@gmail.com or join our Discord channel.
+For support, email krishna.8.git@gmail.com.
